@@ -11,7 +11,7 @@ supportedArchitectures:
 # Refuse packages published < 7 days ago, matching the root pnpm-workspace.yaml.
 minimumReleaseAge: 10080
 allowBuilds:
-  '@firebase/util': set this to true or false
+  '@firebase/util': true
   '@tailwindcss/oxide': true
   esbuild: false
-  protobufjs: set this to true or false
+  protobufjs: true

@@ -1517,7 +1517,19 @@ export default function App() {
       setLoadingProducts(false);
     });
 
-    // listen to orders collection
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProducts();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setOrders(INIT_ORDERS);
+      setCustomers(INIT_CUSTOMERS);
+      return;
+    }
+
     const unsubscribeOrders = onSnapshot(collection(db, "orders"), snapshot => {
       try {
         const items: Order[] = snapshot.docs.map(docSnap => {
@@ -1546,7 +1558,6 @@ export default function App() {
       setOrders(loadLocalOrders());
     });
 
-    // listen to customers collection
     const unsubscribeCustomers = onSnapshot(collection(db, "customers"), snapshot => {
       try {
         const items: Customer[] = snapshot.docs.map(docSnap => {
@@ -1575,12 +1586,10 @@ export default function App() {
     });
 
     return () => {
-      unsubscribeAuth();
-      unsubscribeProducts();
       unsubscribeOrders();
       unsubscribeCustomers();
     };
-  }, []);
+  }, [user]);
 
   // Handle /ar/:id deep links: find product locally or fetch from Firestore
   useEffect(() => {

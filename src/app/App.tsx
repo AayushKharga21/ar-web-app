@@ -82,6 +82,7 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
 
 const fmt = (n: number) => `NPR ${n.toLocaleString()}`;
 const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+const DEFAULT_AR_MODEL = `${PUBLIC_URL}/models/sofa.glb`;
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -992,7 +993,7 @@ function ArView({ product }: { product?: Product | null }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (!mountRef.current || !product) return;
     // load model-viewer script if not present
     const existing = document.querySelector('script[data-model-viewer]');
     if (!existing) {
@@ -1003,8 +1004,8 @@ function ArView({ product }: { product?: Product | null }) {
       document.head.appendChild(s);
     }
 
-    const modelSrc = product?.modelGlbUrl || product?.image || '';
-    const iosSrc = product?.modelUsdzUrl || '';
+    const modelSrc = product.modelGlbUrl || DEFAULT_AR_MODEL;
+    const iosSrc = product.modelUsdzUrl || '';
 
     const html = `
       <div style="height:100vh; display:flex; flex-direction:column;">
@@ -1027,6 +1028,17 @@ function ArView({ product }: { product?: Product | null }) {
       mountRef.current && (mountRef.current.innerHTML = '');
     };
   }, [product]);
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground px-6 text-center">
+        <div>
+          <p className="mb-2 text-sm">Preparing AR view for this product.</p>
+          <p className="text-xs">If the product does not load, verify the scanned QR link and product data.</p>
+        </div>
+      </div>
+    );
+  }
 
   return <div ref={mountRef} />;
 }

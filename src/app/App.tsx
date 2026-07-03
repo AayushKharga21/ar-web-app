@@ -511,6 +511,7 @@ function CheckoutPage({
   onPlaceOrder: () => void; orderPlaced: boolean; onBack: () => void;
 }) {
   const [form, setForm] = useState({ name: "", email: "", address: "", city: "", zip: "", card: "", expiry: "", cvv: "" });
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cod">("card");
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   if (orderPlaced) return (
@@ -567,14 +568,44 @@ function CheckoutPage({
             )}
             {step === 2 && (
               <>
-                <h3 className="font-medium mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>Payment Details</h3>
-                {[["Card Number", "card", "text", "1234 5678 9012 3456"], ["Expiry", "expiry", "text", "MM / YY"], ["CVV", "cvv", "text", "•••"]].map(([label, key, type, ph]) => (
-                  <div key={key}>
-                    <label className="text-xs font-mono tracking-widest uppercase text-muted-foreground block mb-1.5">{label}</label>
-                    <input type={type} placeholder={ph as string} value={(form as any)[key]} onChange={e => f(key, e.target.value)} className="w-full border border-border bg-transparent px-4 py-2.5 text-sm outline-none focus:border-foreground transition-colors" />
+                <h3 className="font-medium mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>Payment Method</h3>
+                <div className="space-y-3 mb-6">
+                  <label className="flex items-center gap-3 p-4 border border-border rounded cursor-pointer hover:border-foreground transition-colors" style={{ borderColor: paymentMethod === "card" ? "currentColor" : undefined }}>
+                    <input type="radio" name="payment" value="card" checked={paymentMethod === "card"} onChange={() => setPaymentMethod("card")} className="w-4 h-4 accent-foreground" />
+                    <div>
+                      <p className="font-medium text-sm">Credit / Debit Card</p>
+                      <p className="text-xs text-muted-foreground">Pay securely with your card</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-4 border border-border rounded cursor-pointer hover:border-foreground transition-colors" style={{ borderColor: paymentMethod === "cod" ? "currentColor" : undefined }}>
+                    <input type="radio" name="payment" value="cod" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} className="w-4 h-4 accent-foreground" />
+                    <div>
+                      <p className="font-medium text-sm">Cash on Delivery (COD)</p>
+                      <p className="text-xs text-muted-foreground">Pay when you receive your order</p>
+                    </div>
+                  </label>
+                </div>
+
+                {paymentMethod === "card" && (
+                  <>
+                    <h3 className="font-medium mb-4 text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>Card Details</h3>
+                    {[["Card Number", "card", "text", "1234 5678 9012 3456"], ["Expiry", "expiry", "text", "MM / YY"], ["CVV", "cvv", "text", "•••"]].map(([label, key, type, ph]) => (
+                      <div key={key} className="mb-4">
+                        <label className="text-xs font-mono tracking-widest uppercase text-muted-foreground block mb-1.5">{label}</label>
+                        <input type={type} placeholder={ph as string} value={(form as any)[key]} onChange={e => f(key, e.target.value)} className="w-full border border-border bg-transparent px-4 py-2.5 text-sm outline-none focus:border-foreground transition-colors" />
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {paymentMethod === "cod" && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded text-sm text-blue-900 mb-4">
+                    <p className="font-medium mb-2">Payment on Delivery</p>
+                    <p className="text-xs">You will pay the full amount of <strong>{fmt(cartTotal)}</strong> when your order is delivered. Our delivery partner will collect the payment at your doorstep.</p>
                   </div>
-                ))}
-                <div className="flex gap-3 mt-4">
+                )}
+
+                <div className="flex gap-3 mt-6">
                   <button onClick={() => setStep(1)} className="flex-1 border border-border py-3.5 text-sm hover:border-foreground transition-colors">BACK</button>
                   <button onClick={() => setStep(3)} className="flex-1 bg-foreground text-background py-3.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">REVIEW ORDER</button>
                 </div>

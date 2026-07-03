@@ -508,7 +508,7 @@ function CheckoutPage({
   cart, cartTotal, step, setStep, onPlaceOrder, orderPlaced, onBack
 }: {
   cart: CartItem[]; cartTotal: number; step: number; setStep: (s: number) => void;
-  onPlaceOrder: () => void; orderPlaced: boolean; onBack: () => void;
+  onPlaceOrder: (form: any, paymentMethod: string, cart: CartItem[], total: number) => void; orderPlaced: boolean; onBack: () => void;
 }) {
   const [form, setForm] = useState({ name: "", email: "", address: "", city: "", zip: "", card: "", expiry: "", cvv: "" });
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cod">("card");
@@ -628,7 +628,7 @@ function CheckoutPage({
                 </div>
                 <div className="flex gap-3 mt-4">
                   <button onClick={() => setStep(2)} className="flex-1 border border-border py-3.5 text-sm hover:border-foreground transition-colors">BACK</button>
-                  <button onClick={onPlaceOrder} className="flex-1 bg-accent text-accent-foreground py-3.5 text-sm font-medium hover:bg-[#A86840] transition-colors">
+                  <button onClick={() => onPlaceOrder(form, paymentMethod, cart, cartTotal)} className="flex-1 bg-accent text-accent-foreground py-3.5 text-sm font-medium hover:bg-[#A86840] transition-colors">
                     PLACE ORDER — {fmt(cartTotal)}
                   </button>
                 </div>
@@ -2077,7 +2077,61 @@ export default function App() {
     }
   };
 
-  const placeOrder = () => {
+  const placeOrder = async (form: any, paymentMethod: string, cartItems: CartItem[], total: number) => {
+    // Validate form data
+    if (!form.name || !form.email || !form.address || !form.city || !form.zip) {
+      showNotif("Please fill in all shipping details");
+      return;
+    }
+
+    if (paymentMethod === "card" && (!form.card || !form.expiry || !form.cvv)) {
+      showNotif("Please fill in all card details");
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      showNotif("Cart is empty");
+      return;
+    }
+
+    const orderId = `ORD-${Date.now()}`;
+    const orderData = {
+      id: orderId,
+      customer: form.name,
+      email: form.email,
+      address: form.address,
+      city: form.city,
+      zip: form.zip,
+      items: cartItems.length,
+      total: total,
+      status: "pending" as OrderStatus,
+      date: new Date().toLocaleDateString(),
+      paymentMethod: paymentMethod,
+      orderItems: cartItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        color: item.color,
+        price: item.product.price,
+      })),
+      createdAt: new Date(),
+    };
+
+    try {
+      // Try to save to Firestore
+      await addDoc(collection(db, "orders"), orderData);
+      showNotif("Order placed successfully!");
+    } catch (err: any) {
+      console.warn("Firestore order save failed, using local storage", err);
+      // Fallback to local storage
+      const localOrders = loadLocalOrders();
+      const toStore = { ...orderData, docId: `local-${Date.now()}` } as Order;
+      localOrders.push(toStore);
+      saveLocalOrders(localOrders);
+      showNotif("Order placed successfully! (saved locally)");
+    }
+
+    // Update UI
     setCart([]);
     setOrderPlaced(true);
     setCheckoutStep(1);

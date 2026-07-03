@@ -1473,6 +1473,42 @@ export default function App() {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const syncProductModels = async () => {
+    if (!user) {
+      showNotif("Please sign in as admin to sync models.");
+      return;
+    }
+
+    const modelMapping: Record<string, string> = {
+      "Ladder": `${PUBLIC_URL}/models/ladder.glb`,
+      "Bed": `${PUBLIC_URL}/models/bed.glb`,
+      "Stand": `${PUBLIC_URL}/models/Stand.glb`,
+      "Sofa": `${PUBLIC_URL}/models/sofa.glb`,
+      "Chair": `${PUBLIC_URL}/models/chair.glb`,
+    };
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (const product of products) {
+      const glbUrl = modelMapping[product.name];
+      if (glbUrl && product.modelGlbUrl !== glbUrl) {
+        try {
+          if (product.docId) {
+            await updateDoc(doc(db, "products", product.docId), { modelGlbUrl: glbUrl });
+            updated++;
+          }
+        } catch (err) {
+          console.error("Failed to update model for", product.name, err);
+        }
+      } else {
+        skipped++;
+      }
+    }
+
+    showNotif(`Synced ${updated} products. ${skipped} already up to date.`);
+  };
+
   const filteredProducts = products.filter(p => {
     const matchCat = activeCategory === "All" || p.category === activeCategory;
     const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1734,42 +1770,6 @@ export default function App() {
 
   const updateCartQty = (id: number, color: string, delta: number) =>
     setCart(prev => prev.map(i => i.product.id === id && i.color === color ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter(i => i.quantity > 0));
-
-  const syncProductModels = async () => {
-    if (!user) {
-      showNotif("Please sign in as admin to sync models.");
-      return;
-    }
-
-    const modelMapping: Record<string, string> = {
-      "Ladder": `${PUBLIC_URL}/models/ladder.glb`,
-      "Bed": `${PUBLIC_URL}/models/bed.glb`,
-      "Stand": `${PUBLIC_URL}/models/Stand.glb`,
-      "Sofa": `${PUBLIC_URL}/models/sofa.glb`,
-      "Chair": `${PUBLIC_URL}/models/chair.glb`,
-    };
-
-    let updated = 0;
-    let skipped = 0;
-
-    for (const product of products) {
-      const glbUrl = modelMapping[product.name];
-      if (glbUrl && product.modelGlbUrl !== glbUrl) {
-        try {
-          if (product.docId) {
-            await updateDoc(doc(db, "products", product.docId), { modelGlbUrl: glbUrl });
-            updated++;
-          }
-        } catch (err) {
-          console.error("Failed to update model for", product.name, err);
-        }
-      } else {
-        skipped++;
-      }
-    }
-
-    showNotif(`Synced ${updated} products. ${skipped} already up to date.`);
-  };
 
   const createProduct = async (product: Product) => {
     const nextId = Date.now();
